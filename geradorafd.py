@@ -1,5 +1,5 @@
 import sys
-
+import re
 
 """ -----------------Abrindo arquivo de log------------------------------------------------------- """
 def openFile(fileName):
@@ -122,31 +122,56 @@ def parseGR(grs):
     return parsedGRs
 
 
+def getGRStokens(gr):
+    grTokens = []
+
+   
+
+    for rule in gr:
+        temp = rule.split('::=')[1]
+        temp = temp.split('|')
+        for aux in temp:
+            aux = aux.split('<')
+            grTokens.append(aux[0])
+            
+    
+    return sorted(set(grTokens))
+
+
+def removeBlankSpace(data):
+    cleaned = []
+
+    for token in data:
+        cleaned.append(token.replace(' ', ''))
+
+    return cleaned
 
 
 
 
-print("TRATAMENTO DE ARQUIVO\n")
+
 allData = getData(openFile(getParam(1)))        # Pega os dados do arquivo e coloca em um vetor
-printFile(allData)                              # Imprime o conteúdo do vetor
-print("FIM DO TRATAMENTO DE ARQUIVO\n\n")
+#printFile(allData)                              # Imprime o conteúdo do vetor
 
-
-print("TRATAMENTO DE TOKENS\n")
 tokens = getTokens(allData)                     # Pega os tokens sujos
-printFile(tokens)                               # Imprime o conteúdo do vetor
-print("\nPARSEA OS TOKENS\n\n")
+#printFile(tokens)                               # Imprime o conteúdo do vetor
+
 parsedTokens = parseTokens(tokens)              # Parseia os tokens
-printFile(parsedTokens)                         # Imprime o conteúdo do vetor
-print("\nFIM DO TRATAMENTO DE TOKENS\n\n")
+#printFile(parsedTokens)                         # Imprime o conteúdo do vetor
 
-
-
-print("TRATAMENTO DE GR\n")
 grs = getGR(allData)                            # Pega os GRs
-printFile(grs)                                  # Imprime o conteúdo do vetor
-print("\nPARSEA OS GRs\n\n")
+#printFile(grs)                                  # Imprime o conteúdo do vetor
+
+tokensFromGRS = getGRStokens(grs)                    # Pega os tokens do GRs
+#printFile(tokensFromGRS)                              # Imprime o conteúdo do vetor
+
+
+parsedTokens =removeBlankSpace(parsedTokens)
+tokensFromGRS =removeBlankSpace(tokensFromGRS)
+
+allTokens = parsedTokens + tokensFromGRS         # Merge dos tokens
+allTokens = sorted(set(allTokens))             # Remove as duplicatas e ordena
+#printFile(allTokens)                              # Imprime o conteúdo do vetor
+
 parsedGRs = parseGR(grs)                    # Parseia os GRs
-printFile(parsedGRs)                            # Imprime o conteúdo do vetor
-print("\nFIM DO TRATAMENTO DE GR")
-print(parsedGRs)
+#printFile(parsedGRs)                            # Imprime o conteúdo do vetor
