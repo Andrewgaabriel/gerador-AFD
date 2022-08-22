@@ -376,3 +376,7 @@ print('------------------------------------------------------------------')
 afnd.to_csv('afnd.csv', index=True, header=True)
 afd.to_csv('afd.csv', index=True, header=True)
 
+
+
+# TODO: fazer minimização do AFD
+# TODO: eliminar inalcançáveis e mortos
