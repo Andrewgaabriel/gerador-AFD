@@ -1,0 +1,12 @@
+,0,1
+C,[ACZ],-
+B,-,[BZ]
+A,[ACZ],-
+S,[ACS],[BS]
+*Z,-,-
+ACS,[ACSZ],[BS]
+ACZ,[ACZ],-
+BS,[ACS],[BSZ]
+BZ,-,[BZ]
+ACSZ,[ACSZ],[BS]
+BSZ,[ACS],[BSZ]

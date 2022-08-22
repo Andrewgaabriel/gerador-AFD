@@ -1,10 +1,12 @@
+from os import rename
 import sys
-from this import d
 import pandas as pd
 
 
+ESTADOFINAL = 'Z' # PROVISÓRIO ?
+allRules = []
 
-ESTADOFINAL = 'D' # PROVISÓRIO ?
+
 
 
 def openFile(fileName):
@@ -29,11 +31,14 @@ def getParam(arg):
 
 
 
+
 def getData(file):
     data = list()
     for line in file:
         data.append(line)
     return data
+
+
 
 
 def getTokens(data):
@@ -43,8 +48,9 @@ def getTokens(data):
             break
         else:
             dirtyTokens.append(line)
-    
     return removeQuebraLinha(dirtyTokens)
+
+
 
 
 def getGR(data):
@@ -55,7 +61,6 @@ def getGR(data):
             break
         else:
             grs.append(line)
-    
     return removeQuebraLinha(grs)
 
 
@@ -65,29 +70,29 @@ def removeQuebraLinha(data):
     cleaned = []
     for token in data:
         cleaned.append(token.replace('\n', ''))
-
     return cleaned
+
 
 
 
 def parseTokens(tokens):
     parsed = []
-
     for token in tokens:
         for char in token:
             parsed.append(char)
-    
     parsed = sorted(set(parsed))
-
     return parsed
 
 
+
+
 def parseGR(grs):
+
     parsedGRs = []
     
     for gr in grs:
-        completedRule = []
 
+        completedRule = []
         dirtyRuleName = gr.split('::=')[0]
         ruleName = dirtyRuleName.replace('<','').replace('>','')
 
@@ -95,7 +100,7 @@ def parseGR(grs):
         rules = dirtyRules.split('|')
 
         for rule in rules:
-            rule = rule.replace(' ','s')
+            rule = rule.replace(' ','')
 
         ruleName = ruleName.replace(' ','')
 
@@ -105,6 +110,8 @@ def parseGR(grs):
         parsedGRs.append(completedRule)
 
     return parsedGRs
+
+
 
 
 def getGRStokens(gr):
@@ -122,6 +129,7 @@ def getGRStokens(gr):
 
 
 
+
 def removeBlankSpace(data):
     cleaned = []
 
@@ -129,6 +137,7 @@ def removeBlankSpace(data):
         cleaned.append(token.replace(' ', ''))
 
     return cleaned
+
 
 
 
@@ -149,7 +158,9 @@ def removeEpsilon(data):
     cleaned = []
 
     for token in data:
-        if token != 'ε':
+        if token == 'ε' or token == 'Îµ':
+            continue
+        else:
             cleaned.append(token)
 
     return cleaned
@@ -165,7 +176,7 @@ def fillWithGRs(table, grs):
             rule = rule.replace(' ', '').replace('\n', '')
 
 
-            if "ε" in rule: 
+            if "ε" in rule or "Îµ" in rule: 
                 #IMPLEMENTAR TRATAMENTO DE QND OCORRER EPSILON
                 continue
 
@@ -186,64 +197,182 @@ def fillWithGRs(table, grs):
                     table.loc[ruleName, token] += ',' + production
                 
         
+    return ordenaTable(table)
+
+
+
+
+def temRegraNova(table):
+    for index in table.index:
+        for token in table.columns:
+            if len(table.loc[index, token]) > 1 and table.loc[index, token] not in allRules:
+                return True
+            else:
+                continue           
+    
+
+
+
+def ordenaTable(table):
+    for index in table.index:
+        for token in table.columns:
+            if ',' in table.loc[index, token]:
+                table.loc[index, token] = table.loc[index, token].replace('-,', '')
+                table.loc[index, token] = quebraEordena(table.loc[index, token])
+            else:
+                continue
     return table
 
 
-def determiniza(afnd, tokens):
-    afd = pd.DataFrame(columns=tokens)
-    #implementar aqui a determinização da afnd
 
+
+def removeNan(table):
+    for index in table.index:
+        for token in table.columns:
+            if table.loc[index, token] == 'nan':
+                table.loc[index, token] = '-'
+    return table
+
+
+
+
+def printTable(table):
+    for index in table.index:
+        for token in table.columns:
+            print('linha :', index, 'coluna: ',token, 'valor: ', table.loc[index, token])
+
+
+
+
+def quebraEordena(string):
+    string = string.split(',')
+    string = sorted(set(string))
+    newString = ','.join(string)
+    return newString
+
+
+
+
+def determiniza(afnd, tokens):
+
+    afd = pd.DataFrame(columns=tokens)
+    afd = afd[allTokens].astype(str)
+
+    newRules = []
+
+    # VERIFICA SE FORAM CRIADAS NOVAS REGRAS
+    
+    for index in afnd.index:
+        for token in afnd.columns:
+            if len(afnd.loc[index, token]) > 1 and afnd.loc[index, token] not in allRules: # SE TEM VÁRIAS REGRAS
+                
+                newRules.append(quebraEordena(afnd.loc[index, token]))
+                allRules.append(quebraEordena(afnd.loc[index, token])) #adiciona no vetor global de regras
+                afd.loc[index, token] = afnd.loc[index, token]
+            else:
+                afd.loc[index, token] = quebraEordena(afnd.loc[index, token])
+
+    
+    newRules = sorted(set(newRules))
+
+    for rule in newRules: # Percorre o vetor de novas regras
+
+        dados = dict()
+        
+        #rule = '[' + rule.replace(',', '') + ']'
+
+        toSearch = rule.split(',')
+
+        for ruleT in toSearch: # Percorre cada regra da nova regra
+
+            for index in afd.index: # Percorre cada linha da tabela
+
+                if ruleT == index:  # Se a regra for igual a linha da tabela
+
+                    for token in afd.columns: # Percorre cada coluna da tabela
+
+                        if afd.loc[index, token] == 'nan': # se for 'nan', não faz nada
+                            continue
+
+                        else:
+
+                            if dados.get(token) == None: # se ja não existe nada no dicionário
+                                dados[token] = afd.loc[index, token] # simplesmente adiciona o token no dicionário
+
+                            elif dados.get(token) != None: # se ja existe algum token no dicionário
+
+                                if afd.loc[index, token] not in dados[token]: # se o token que eu quero adicionar não está no dicionário
+                                    dados[token] += ',' + afd.loc[index, token] # adiciona o token no dicionário
+
+                                else:
+                                    continue
+
+        for token in dados:
+            rule = rule.replace('-,', '').replace(',', '')
+            afd.loc[rule, token] = dados[token]
+
+    return afd
+
+
+
+
+def cleanTable(table):
+    for index in table.index:
+        for token in table.columns:
+            if ',' in table.loc[index, token]:
+                table.loc[index, token] = '[' + table.loc[index, token].replace(',', '') + ']'
+
+
+    return table
 
 
 
 
 allData = getData(openFile(getParam(1)))        # Pega os dados do arquivo e coloca em um vetor
-#printFile(allData)                              # Imprime o conteúdo do vetor
-
 tokens = getTokens(allData)                     # Pega os tokens sujos
-#printFile(tokens)                               # Imprime o conteúdo do vetor
-
 parsedTokens = parseTokens(tokens)              # Parseia os tokens
-#printFile(parsedTokens)                         # Imprime o conteúdo do vetor
-
 grs = getGR(allData)                            # Pega os GRs
-#printFile(grs)                                  # Imprime o conteúdo do vetor
-
 tokensFromGRS = getGRStokens(grs)                    # Pega os tokens do GRs
-#printFile(tokensFromGRS)                              # Imprime o conteúdo do vetor
-
-
-#parsedTokens =removeBlankSpace(parsedTokens)
-#tokensFromGRS =removeBlankSpace(tokensFromGRS)
-
 allTokens = removeBlankSpace(parsedTokens) + removeBlankSpace(tokensFromGRS)         # Merge dos tokens
 allTokens = sorted(set(allTokens))             # Remove as duplicatas e ordena
-#printFile(allTokens)                              # Imprime o conteúdo do vetor
-
 parsedGRs = parseGR(grs)                    # Parseia os GRs
-#printFile(parsedGRs)                            # Imprime o conteúdo do vetor
-
-
 allTokens = removeEpsilon(allTokens)
 
 
 afnd = createTable(allTokens, parsedGRs)
-print(afnd)
 afnd = afnd[allTokens].astype(str)
 afnd = fillWithGRs(afnd, parsedGRs)
+afnd = removeNan(afnd)
 print(afnd)
 
+afd= determiniza(afnd, allTokens)
+afd = afd[allTokens].astype(str)
+afd = removeNan(afd)
+afd = ordenaTable(afd)
 
 
-print(allTokens)
-print(parsedGRs)
+while temRegraNova(afd):
+    afd = determiniza(afd, allTokens)
+    afd = ordenaTable(afd)
+    print(afd)
+    print("\nAFD\n")
 
 
 
 
-# TODO: IMPLEMENTAR A TABELA (CRIAR FUNÇÕES GENÉRICAS PARA FZR ESSAS TAREFAS)
-# TODO: TRANSFORMAR O AFND PARA O AFD
-# TODO: FAZER A MINIMIZAÇÃO DO AFD
-# TODO: GERAR O ARQUIVO DE SAIDA
 
- 
+print('--------------------------------AFND--------------------------------')
+afnd = cleanTable(afnd)
+print(afnd)
+print('------------------------------------------------------------------')
+
+
+print('--------------------------------AFD--------------------------------')
+afd = cleanTable(afd)
+print(afd)
+print('------------------------------------------------------------------')
+
+
+afnd.to_csv('afnd.csv', index=True, header=True)
+afd.to_csv('afd.csv', index=True, header=True)
+
