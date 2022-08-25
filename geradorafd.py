@@ -149,6 +149,7 @@ def createTable(tokens, grs):
     for rule in grs:
         indexes.append(rule[0])
     indexes.append('*' + ESTADOFINAL) # adiciona estado final
+    indexes.append('ERR') # adiciona estado de erro
     
     table = pd.DataFrame(index=indexes, columns=tokens)
 
@@ -319,15 +320,67 @@ def determiniza(afnd, tokens):
 
 
 def cleanTable(table):
+    """ ADICIONA OS ESTADOS DE ERRO E AS CHAVES """
     for index in table.index:
         for token in table.columns:
             if ',' in table.loc[index, token]:
                 table.loc[index, token] = '[' + table.loc[index, token].replace(',', '') + ']'
+            elif '-' in afd.loc[index, token]:
+                afd.loc[index, token] = 'ERR'
 
 
     return table
 
 
+""" def eliminaInalcancaveis(table):
+    terminais = [] # pega todos os terminais/regras
+    
+    for index in table.index:
+        aux = []
+        aux.append(index)
+        terminais.append(aux)
+    
+    for terminal in terminais:
+        for index in table.index:
+            if terminal[0] == index:
+                for token in table.columns:
+                    terminal.append(table.loc[index, token])
+            
+
+
+    return terminais
+
+def imprimeInalcançaveis(terminais):
+    for terminal in terminais:
+        for i in range(len(terminal)):
+            if i == 0:
+                print('Partida:', terminal[i])
+            else:
+                print(terminal[i])
+    print('\n')
+
+
+
+
+def eliminaMortos(table):
+    return table
+
+def minimizacao(afd):
+    afd = eliminaInalcancaveis(afd)
+    afd = eliminaMortos(afd)
+    return afd """
+
+
+def estadoDeErro(afd):
+    """ ADICIONA O ESTADO DE ERRO """
+    for index in afd.index:
+        for token in afd.columns:
+            if '-' in afd.loc[index, token]:
+                afd.loc[index, token] = 'ERR'
+            else:
+                continue
+    
+    return afd
 
 
 allData = getData(openFile(getParam(1)))  # Pega os dados do arquivo de entrada e coloca em um vetor
@@ -345,6 +398,7 @@ afnd = afnd[allTokens].astype(str)          # altera o tipo de dados para string
 afnd = fillWithGRs(afnd, parsedGRs)         # preenche a tabela com as regras
 afnd = removeNan(afnd)                      # remove os 'nan'
 print(afnd)                                 # printa a tabela
+
 
 
 afd= determiniza(afnd, allTokens)           # determiniza o afnd
@@ -378,7 +432,8 @@ print('------------------------------------------------------------------')
 afnd.to_csv('afnd.csv', index=True, header=True)
 afd.to_csv('afd.csv', index=True, header=True)
 
-
+""" a = eliminaInalcancaveis(afd)
+imprimeInalcançaveis(a) """
 
 # TODO: fazer minimização do AFD (i.e eliminar inalcançáveis e mortos)
 
