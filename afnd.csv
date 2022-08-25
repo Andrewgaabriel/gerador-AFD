@@ -1,6 +1,6 @@
-,0,1
-C,[ACZ],-
-B,-,[BZ]
-A,[ACZ],-
-S,[ACS],[BS]
-*Z,-,-
+,a,b,c
+C,[SZ],-,[AC]
+B,A,-,[BSZ]
+A,[SZ],C,A
+S,A,[BZ],[SZ]
+*Z,-,-,-

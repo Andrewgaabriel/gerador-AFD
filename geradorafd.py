@@ -48,7 +48,8 @@ def getTokens(data):
             break
         else:
             dirtyTokens.append(line)
-    return removeQuebraLinha(dirtyTokens)
+            #parsedTokens = parseTokens(tokens)
+    return parseTokens(removeQuebraLinha(dirtyTokens))
 
 
 
@@ -61,6 +62,7 @@ def getGR(data):
             break
         else:
             grs.append(line)
+            
     return removeQuebraLinha(grs)
 
 
@@ -146,7 +148,7 @@ def createTable(tokens, grs):
     indexes = []
     for rule in grs:
         indexes.append(rule[0])
-    indexes.append('*' + ESTADOFINAL)
+    indexes.append('*' + ESTADOFINAL) # adiciona estado final
     
     table = pd.DataFrame(index=indexes, columns=tokens)
 
@@ -328,33 +330,33 @@ def cleanTable(table):
 
 
 
-allData = getData(openFile(getParam(1)))        # Pega os dados do arquivo e coloca em um vetor
-tokens = getTokens(allData)                     # Pega os tokens sujos
-parsedTokens = parseTokens(tokens)              # Parseia os tokens
-grs = getGR(allData)                            # Pega os GRs
-tokensFromGRS = getGRStokens(grs)                    # Pega os tokens do GRs
-allTokens = removeBlankSpace(parsedTokens) + removeBlankSpace(tokensFromGRS)         # Merge dos tokens
-allTokens = sorted(set(allTokens))             # Remove as duplicatas e ordena
-parsedGRs = parseGR(grs)                    # Parseia os GRs
-allTokens = removeEpsilon(allTokens)
+allData = getData(openFile(getParam(1)))  # Pega os dados do arquivo de entrada e coloca em um vetor
+tokens = getTokens(allData)               # Pega os vetor gerado e coloca os tokens em um vetor
+grs = getGR(allData)                      # Pega os vetor gerado e coloca as regras em um vetor
+tokensFromGRS = getGRStokens(grs)         # Pega os tokens presentes nas regras e coloca em um vetor
+allTokens = removeBlankSpace(tokens) + removeBlankSpace(tokensFromGRS) # Faz uma junção dos tokens (das regras e os fornecidos na entrada)
+allTokens = sorted(set(allTokens))        # Remove as duplicatas e ordena
+parsedGRs = parseGR(grs)                  # Pega o vetor gerado e coloca as regras parseadas em um vetor
+allTokens = removeEpsilon(allTokens)      # Remove o epsilon das gramáticas
 
 
-afnd = createTable(allTokens, parsedGRs)
-afnd = afnd[allTokens].astype(str)
-afnd = fillWithGRs(afnd, parsedGRs)
-afnd = removeNan(afnd)
-print(afnd)
-
-afd= determiniza(afnd, allTokens)
-afd = afd[allTokens].astype(str)
-afd = removeNan(afd)
-afd = ordenaTable(afd)
+afnd = createTable(allTokens, parsedGRs)    # cria a tabela (dataframe) para o AFND
+afnd = afnd[allTokens].astype(str)          # altera o tipo de dados para string
+afnd = fillWithGRs(afnd, parsedGRs)         # preenche a tabela com as regras
+afnd = removeNan(afnd)                      # remove os 'nan'
+print(afnd)                                 # printa a tabela
 
 
-while temRegraNova(afd):
-    afd = determiniza(afd, allTokens)
-    afd = ordenaTable(afd)
-    print(afd)
+afd= determiniza(afnd, allTokens)           # determiniza o afnd
+afd = afd[allTokens].astype(str)            # altera o tipo de dados para string
+afd = removeNan(afd)                        # remove os 'nan'
+afd = ordenaTable(afd)                      # ordena a tabela e normaliza
+
+
+while temRegraNova(afd):                # função que verifica se há novas regras geradas a partir das regras já determinizadas
+    afd = determiniza(afd, allTokens)   # determiniza o afnd
+    afd = ordenaTable(afd)              # ordena a tabela e normaliza
+    print(afd)                          # printa a tabela a cada etapa
     print("\nAFD\n")
 
 
@@ -378,5 +380,5 @@ afd.to_csv('afd.csv', index=True, header=True)
 
 
 
-# TODO: fazer minimização do AFD
-# TODO: eliminar inalcançáveis e mortos
+# TODO: fazer minimização do AFD (i.e eliminar inalcançáveis e mortos)
+
