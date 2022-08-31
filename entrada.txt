@@ -2,5 +2,5 @@ se
 ex
 sa
 
-<S> ::= e<A> | i<A>
+<S> ::= e<A> | i<A> 
 <A> ::= e<A> | i<A> |  ε
