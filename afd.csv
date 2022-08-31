@@ -1,11 +1,4 @@
-,a,b,c
-C,[SZ],ERR,[AC]
-B,A,ERR,[BSZ]
-A,[SZ],C,A
-S,A,[BZ],[SZ]
-*Z,ERR,ERR,ERR
-ERR,ERR,ERR,ERR
-AC,[SZ],C,[AC]
-BSZ,A,[BZ],[BSZ]
-BZ,A,ERR,[BSZ]
-SZ,A,[BZ],[SZ]
+,a,e,i,s,x
+*A,ERR,A,A,ERR,ERR
+S,ERR,A,A,ERR,ERR
+ERR,ERR,ERR,ERR,ERR,ERR
