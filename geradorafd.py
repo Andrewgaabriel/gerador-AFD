@@ -1,9 +1,11 @@
+from itertools import count
 import sys
 import pandas as pd
 
 
 possibleRules = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 allRules = []
+INITIALSTATE = 'S'
 
 
 
@@ -361,7 +363,6 @@ def determiniza(afnd, tokens):
 
     
     newRules = sorted(set(newRules))
-    print('Novas regras:', newRules, '\n')
 
     for rule in newRules: # Percorre o vetor de novas regras
 
@@ -373,9 +374,7 @@ def determiniza(afnd, tokens):
 
             for index in afd.index: # Percorre cada linha da tabela
                 
-                print('indice:', index, '\n')
                 indexWithout = index.replace('*', '')
-                print('indice:', indexWithout, '\n')
                 
 
                 if ruleT == indexWithout:  # Se a regra for igual a linha da tabela
@@ -427,7 +426,58 @@ def cleanTable(table):
 
 
 def carregaTokens(afnd, tokens):
-    print('Carregando tokens...')
+    """ formato <tokens> :: ['se\n', 'ex\n', 'sa\n']"""
+    
+    
+    for i in range(len(tokens)):
+        tokens[i] = tokens[i].replace('\n', '')
+    
+    print('Carregando tokens...', tokens)
+    
+    print('\n', afnd, '\n')
+    
+    for word in tokens: # 'se'
+        initial = True
+        last = word[-1:] # pega o último caractere
+        updatePossibleRules()
+        for token in word:  # 's'
+            
+            count = 0
+            
+            if initial: # se for o primeiro caractere
+                
+                for col in afnd.columns:
+                    if token == col:
+                        if len(afnd.loc[INITIALSTATE, token]) > 0:
+                            afnd.loc[INITIALSTATE, token] += ',' + possibleRules[count]
+                            afnd = newBlankRow(afnd, possibleRules[count])
+                            initial = False
+                            count += 1
+                        else:
+                            afnd.loc[INITIALSTATE, token] = possibleRules[count]
+                            afnd = newBlankRow(afnd, possibleRules[count])
+                            initial = False
+                            count += 1
+                    else:
+                        continue
+            elif token == last: # o estado criado tem que se tornar um estado final
+                
+                for col in afnd.columns:
+                    if token == col:
+                        #verificar se já não existe uma regra
+                        afnd.loc[possibleRules[count-1], token] = possibleRules[count]
+                        afnd = newBlankRow(afnd, possibleRules[count])
+                        afnd = virouTerminal(afnd, possibleRules[count])
+                    else:
+                        continue
+
+            else:
+                #lógica para criar os estados intermediários
+                # utilizaremos o count para saber qual estado criar
+                continue
+                
+                
+        
     return afnd
 
 
@@ -438,18 +488,17 @@ allData = getData(openFile(getParam(1)))
 
 # Cria um vetor com todos os tokens
 tokens = getTokens(allData)               
-
+#print('Tokens:', tokens)
 
 # Parseia os tokens e cria uma espécie de alfabeto da linguagem
 parsedTokens = parseTokens(removeQuebraLinha(tokens))
-
 
 # Pega os vetor gerado e coloca as regras em um vetor
 grs = getGR(allData)
 
 
 # Pega os tokens presentes nas regras e coloca em um vetor
-tokensFromGRS = getGRStokens(grs)         
+tokensFromGRS = getGRStokens(grs)  
 
 
 # Faz uma junção dos tokens (das regras e os fornecidos na entrada) -> forma um alfabeto total da linguagem
