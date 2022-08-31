@@ -200,7 +200,7 @@ def newBlankRow(table, indexName):
     lista = []
     
     for i in range(len(table.columns)):
-        lista.append('ERR')
+        lista.append('')
 
     table.loc[indexName] = lista
     allRules.append(indexName) # adiciona a regra na lista de regras
@@ -212,7 +212,7 @@ def newBlankRow(table, indexName):
 def criaRegraFinal(table, grName, terminal):
     """ Trata o caso de uma regra ter apenas um terminal
         cria-se uma regra final para o terminal """
-        
+    
     if '*' in grName:
         grName = grName.replace('*', '')
     
@@ -220,7 +220,7 @@ def criaRegraFinal(table, grName, terminal):
     
     newGrName = possibleRules[0] # próximo nome de regra disponível
     
-    if len(table.loc[grName, terminal]) > 1:
+    if table.loc[grName, terminal] != 'nan':
         table.loc[grName, terminal] += ',' + newGrName
         table = newBlankRow(table, newGrName)
         table = virouTerminal(table, newGrName)
@@ -266,6 +266,8 @@ def fillWithGRs(table, gramaticas):
                 
                 terminal = rule
                 table = criaRegraFinal(table, grName, terminal)
+
+                    
                 
                 continue
 
@@ -294,7 +296,8 @@ def temRegraNova(table):
             if len(table.loc[index, token]) > 1 and table.loc[index, token] not in allRules:
                 return True
             else:
-                continue           
+                continue
+    return False           
     
 
 
@@ -318,7 +321,7 @@ def removeNan(table):
     for index in table.index:
         for token in table.columns:
             if table.loc[index, token] == 'nan':
-                table.loc[index, token] = '-'
+                table.loc[index, token] = ''
     return table
 
 
@@ -349,7 +352,7 @@ def determiniza(afnd, tokens):
     for index in afnd.index:
         for token in afnd.columns:
             if len(afnd.loc[index, token]) > 1 and afnd.loc[index, token] not in allRules: # se é uma regra composta e não está na lista de regras
-                
+                print('Regra:', index, 'tem novas regras', afnd.loc[index, token], '\n')
                 newRules.append(quebraEordena(afnd.loc[index, token])) # guarda as novas regras
                 allRules.append(quebraEordena(afnd.loc[index, token])) # adiciona no vetor global de regras
                 afd.loc[index, token] = afnd.loc[index, token]
@@ -358,6 +361,7 @@ def determiniza(afnd, tokens):
 
     
     newRules = sorted(set(newRules))
+    print('Novas regras:', newRules, '\n')
 
     for rule in newRules: # Percorre o vetor de novas regras
 
@@ -368,8 +372,13 @@ def determiniza(afnd, tokens):
         for ruleT in toSearch: # Percorre cada regra das novas regras
 
             for index in afd.index: # Percorre cada linha da tabela
+                
+                print('indice:', index, '\n')
+                indexWithout = index.replace('*', '')
+                print('indice:', indexWithout, '\n')
+                
 
-                if ruleT == index:  # Se a regra for igual a linha da tabela
+                if ruleT == indexWithout:  # Se a regra for igual a linha da tabela
 
                     for token in afd.columns: # Percorre a coluna da tabela
 
@@ -377,7 +386,7 @@ def determiniza(afnd, tokens):
                             continue
 
                         else:
-
+                            
                             if dados.get(token) == None: # se ja não existe nada no dicionário
                                 dados[token] = afd.loc[index, token] # simplesmente adiciona o token no dicionário
 
@@ -407,6 +416,8 @@ def cleanTable(table):
             if ',' in table.loc[index, token]:
                 table.loc[index, token] = '[' + table.loc[index, token].replace(',', '') + ']'
             elif '-' in afd.loc[index, token]:
+                afd.loc[index, token] = 'ERR'
+            elif len(afd.loc[index, token]) == 0:
                 afd.loc[index, token] = 'ERR'
 
 
@@ -466,7 +477,7 @@ afnd = carregaTokens(afnd, tokens)
 
 
 
-
+print('antes da determinização\n', allRules, afnd)
 
 
 # DETERMINIZAÇÃO --------------------------------------------------------------
