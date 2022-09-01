@@ -243,7 +243,7 @@ def fillWithGRs(table, gramaticas):
     """ Faz o primeiro preenchimento da tabela
         Esse preenchimento é feito pelas gramáticas que foram passadas """
 
-    print('Preenchendo tabela...', gramaticas)
+    #print('Preenchendo tabela...', gramaticas)
     
     # Formato : [['A', [' e<A> ', ' i<A> ', '  ε']], ['S', [' e<A> ', ' i<A>']]]
 
@@ -258,7 +258,7 @@ def fillWithGRs(table, gramaticas):
 
             if "ε" in rule or "Îµ" in rule: # Se tem epislon a regra em questão vira terminal
 
-                print('Regra:', grName, 'tem epsilon')
+                #print('Regra:', grName, 'tem epsilon')
                 table = virouTerminal(table, grName)
 
                 continue
@@ -353,7 +353,7 @@ def determiniza(afnd, tokens):
     
     for index in afnd.index:
         for token in afnd.columns:
-            print('BUGGGGG::', index, token,afnd.loc[index, token])
+            #print('BUGGGGG::', index, token,afnd.loc[index, token])
 
 
             if len(afnd.loc[index, token]) > 0:
@@ -363,7 +363,7 @@ def determiniza(afnd, tokens):
                     afnd.loc[index, token] = rule[1:]
 
             if len(afnd.loc[index, token]) > 0 and afnd.loc[index, token] not in allRules: # se é uma regra composta e não está na lista de regras
-                print('Regra:', index, 'tem novas regras', afnd.loc[index, token], '\n')
+                #print('Regra:', index, 'tem novas regras', afnd.loc[index, token], '\n')
                 newRules.append(quebraEordena(afnd.loc[index, token])) # guarda as novas regras
                 allRules.append(quebraEordena(afnd.loc[index, token])) # adiciona no vetor global de regras
                 afd.loc[index, token] = afnd.loc[index, token]
@@ -374,7 +374,7 @@ def determiniza(afnd, tokens):
     newRules = sorted(set(newRules))
 
     for rule in newRules: # Percorre o vetor de novas regras
-        print('Regra:', rule)
+        #print('Regra:', rule)
 
         
 
@@ -423,6 +423,8 @@ def cleanTable(table):
     """ ADICIONA OS ESTADOS DE ERRO E AS CHAVES """
     
     for index in table.index:
+        #print( 'O INDICEEE:',index)
+
         for token in table.columns:
             if ',' in table.loc[index, token]:
                 table.loc[index, token] = '[' + table.loc[index, token].replace(',', '') + ']'
@@ -430,6 +432,21 @@ def cleanTable(table):
                 afd.loc[index, token] = 'ERR'
             elif len(afd.loc[index, token]) == 0:
                 afd.loc[index, token] = 'ERR'
+    
+    # PARA ALTERAR O NOME DO INDICE DA TABELA
+    # df  =  df.rename(index = {'antigo':'novo'})
+    for index in table.index:
+        if 'S' in index:
+            novo = '->' + index
+            table = table.rename(index = {index:novo})
+        elif '*' in index or len(index) == 1 or index == 'ERR':
+            continue
+        
+        else:
+            novo = '[' + index + ']'
+            table = table.rename(index = {index:novo})
+            
+
 
 
     return table
@@ -444,9 +461,9 @@ def carregaTokens(afnd, tokens):
     for i in range(len(tokens)):
         tokens[i] = tokens[i].replace('\n', '')
     
-    print('Carregando tokens...', tokens)
+    #print('Carregando tokens...', tokens)
     
-    print('\n', afnd, '\n')
+    #print('\n', afnd, '\n')
     
     for word in tokens: # 'se'
         initial = True
@@ -463,7 +480,7 @@ def carregaTokens(afnd, tokens):
                 for col in afnd.columns:
                     if token == col:
                         novaRegra = str(possibleRules[count])
-                        print('INITIAL::', token, col, possibleRules[count], novaRegra, count,'\n')
+                        #print('INITIAL::', token, col, possibleRules[count], novaRegra, count,'\n')
                         if len(afnd.loc[INITIALSTATE, token]) > 0:
                             afnd.loc[INITIALSTATE, token] += ',' + novaRegra
                             afnd = newBlankRow(afnd, novaRegra)
@@ -483,7 +500,7 @@ def carregaTokens(afnd, tokens):
                         
                         novaRegra = str(possibleRules[count])
                         regraAnterior = str(possibleRules[count-1])
-                        print('LAST::', token, col, possibleRules[count], novaRegra, regraAnterior, count,'\n')
+                        #print('LAST::', token, col, possibleRules[count], novaRegra, regraAnterior, count,'\n')
                         #verificar se já não existe uma regra
                         if len(afnd.loc[regraAnterior, token]) > 0: # tem regra já
                             afnd.loc[regraAnterior, token] += ',' + novaRegra
@@ -503,7 +520,7 @@ def carregaTokens(afnd, tokens):
                     if token == col:
                         novaRegra = str(possibleRules[count])
                         regraAnterior = str(possibleRules[count-1])
-                        print('MIDDLE::', token, col, possibleRules[count], novaRegra, regraAnterior, '\n')
+                        #print('MIDDLE::', token, col, possibleRules[count], novaRegra, regraAnterior, '\n')
                         if len(afnd.loc[regraAnterior, token]) > 0:
                             afnd.loc[regraAnterior, token] += ',' + novaRegra
                             afnd = newBlankRow(afnd, novaRegra)
@@ -559,14 +576,20 @@ afnd = afnd[allTokens].astype(str)
 afnd = fillWithGRs(afnd, parsedGRs)         
 afnd = removeNan(afnd)# remove os 'nan's
 
-print('antes de carregar\n',allRules,'\n',afnd,'\n')
+print('\nITERAÇÃO - PREENCHE COM GRAMÁTICAS ----\n\n', afnd)             
+print('\n---------------------------------------------')
+
+#print('antes de carregar\n',allRules,'\n',afnd,'\n')
 
 # função para carregar os tokens na afd
 afnd = carregaTokens(afnd, tokens)          
 
+print('\nITERAÇÃO - PREENCHE COM TOKENS ----\n\n', afnd)             
+print('\n---------------------------------------------')
 
 
-print('antes da determinização\n',allRules,'\n',afnd,'\n')
+
+#print('antes da determinização\n',allRules,'\n',afnd,'\n')
 
 
 # DETERMINIZAÇÃO --------------------------------------------------------------
@@ -575,9 +598,13 @@ print('antes da determinização\n',allRules,'\n',afnd,'\n')
 
 
 # determiniza o afnd + remove os 'nan' + ordena a tabela e normaliza
+
+
 afd = determiniza(afnd, allTokens)      
 afd = removeNan(afd)                        
-afd = ordenaTable(afd)                      
+afd = ordenaTable(afd)         
+print('\nITERAÇÃO 0 - DETERMINIZAÇÃO ----\n\n', afd)             
+print('\n---------------------------------------------')
 
 
 
@@ -588,7 +615,9 @@ time = 1
 while temRegraNova(afd):                
     afd = determiniza(afd, allTokens)   # determiniza o afnd
     afd = ordenaTable(afd)              # ordena a tabela e normaliza
-    print(f'\n ITERAÇÃO {time} \n\n',afd)                          # printa a tabela a cada etapa
+    #print('\nITERAÇÃO 0 - DETERMINIZAÇÃO ----\n')
+    print(f'\n ITERAÇÃO {time} - DETERMINIZAÇÃO ----\n\n',afd)                          # printa a tabela a cada etapa
+    print('\n---------------------------------------------')
     time += 1                            # incrementa o tempo de execução
 
 
@@ -597,7 +626,7 @@ while temRegraNova(afd):
 
 # printa a tabela afnd final
 print('--------------------------------AFND--------------------------------')
-afnd = cleanTable(afnd)
+#afnd = cleanTable(afnd)
 print(afnd)
 print('------------------------------------------------------------------')
 
@@ -619,12 +648,6 @@ afd.to_csv('afd.csv', index=True, header=True)
 
 
 
-
-
-
-
-
-
 # TODO: fazer minimização do AFD (i.e eliminar inalcançáveis e mortos)
 
 
@@ -635,7 +658,7 @@ afd.to_csv('afd.csv', index=True, header=True)
 
 
 
-print('allrules',allRules)
+#print('allrules',allRules)
 
 """ 
 print(afd)
