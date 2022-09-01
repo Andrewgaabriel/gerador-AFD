@@ -345,7 +345,7 @@ def determiniza(afnd, tokens):
 
     afd = pd.DataFrame(columns=tokens) # cria a tabela vazia que será a AFD
     
-    afd = afd[allTokens].astype(str)
+    afd = afd[tokens].astype(str)
 
     newRules = [] # Guarda as novas regras
 
@@ -353,7 +353,16 @@ def determiniza(afnd, tokens):
     
     for index in afnd.index:
         for token in afnd.columns:
-            if len(afnd.loc[index, token]) > 1 and afnd.loc[index, token] not in allRules: # se é uma regra composta e não está na lista de regras
+            print('BUGGGGG::', index, token,afnd.loc[index, token])
+
+
+            if len(afnd.loc[index, token]) > 0:
+
+                rule = afnd.loc[index, token]
+                if rule[0] == ',':
+                    afnd.loc[index, token] = rule[1:]
+
+            if len(afnd.loc[index, token]) > 0 and afnd.loc[index, token] not in allRules: # se é uma regra composta e não está na lista de regras
                 print('Regra:', index, 'tem novas regras', afnd.loc[index, token], '\n')
                 newRules.append(quebraEordena(afnd.loc[index, token])) # guarda as novas regras
                 allRules.append(quebraEordena(afnd.loc[index, token])) # adiciona no vetor global de regras
@@ -365,6 +374,9 @@ def determiniza(afnd, tokens):
     newRules = sorted(set(newRules))
 
     for rule in newRules: # Percorre o vetor de novas regras
+        print('Regra:', rule)
+
+        
 
         dados = dict()
 
@@ -439,23 +451,27 @@ def carregaTokens(afnd, tokens):
     for word in tokens: # 'se'
         initial = True
         last = word[-1:] # pega o último caractere
+        #print('last:', last)
         updatePossibleRules()
+        count = 0
         for token in word:  # 's'
             
-            count = 0
+            
             
             if initial: # se for o primeiro caractere
                 
                 for col in afnd.columns:
                     if token == col:
+                        novaRegra = str(possibleRules[count])
+                        print('INITIAL::', token, col, possibleRules[count], novaRegra, count,'\n')
                         if len(afnd.loc[INITIALSTATE, token]) > 0:
-                            afnd.loc[INITIALSTATE, token] += ',' + possibleRules[count]
-                            afnd = newBlankRow(afnd, possibleRules[count])
+                            afnd.loc[INITIALSTATE, token] += ',' + novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
                             initial = False
                             count += 1
                         else:
-                            afnd.loc[INITIALSTATE, token] = possibleRules[count]
-                            afnd = newBlankRow(afnd, possibleRules[count])
+                            afnd.loc[INITIALSTATE, token] = novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
                             initial = False
                             count += 1
                     else:
@@ -464,17 +480,40 @@ def carregaTokens(afnd, tokens):
                 
                 for col in afnd.columns:
                     if token == col:
+                        
+                        novaRegra = str(possibleRules[count])
+                        regraAnterior = str(possibleRules[count-1])
+                        print('LAST::', token, col, possibleRules[count], novaRegra, regraAnterior, count,'\n')
                         #verificar se já não existe uma regra
-                        afnd.loc[possibleRules[count-1], token] = possibleRules[count]
-                        afnd = newBlankRow(afnd, possibleRules[count])
-                        afnd = virouTerminal(afnd, possibleRules[count])
+                        if len(afnd.loc[regraAnterior, token]) > 0: # tem regra já
+                            afnd.loc[regraAnterior, token] += ',' + novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
+                            afnd = virouTerminal(afnd, novaRegra)
+                        else:
+                            afnd.loc[regraAnterior, token] = novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
+                            afnd = virouTerminal(afnd, novaRegra)
                     else:
                         continue
 
             else:
                 #lógica para criar os estados intermediários
                 # utilizaremos o count para saber qual estado criar
-                continue
+                for col in afnd.columns:
+                    if token == col:
+                        novaRegra = str(possibleRules[count])
+                        regraAnterior = str(possibleRules[count-1])
+                        print('MIDDLE::', token, col, possibleRules[count], novaRegra, regraAnterior, '\n')
+                        if len(afnd.loc[regraAnterior, token]) > 0:
+                            afnd.loc[regraAnterior, token] += ',' + novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
+                            count += 1
+                        else:
+                            afnd.loc[regraAnterior, token] = novaRegra
+                            afnd = newBlankRow(afnd, novaRegra)
+                            count += 1
+                    else:
+                        continue
                 
                 
         
@@ -520,13 +559,14 @@ afnd = afnd[allTokens].astype(str)
 afnd = fillWithGRs(afnd, parsedGRs)         
 afnd = removeNan(afnd)# remove os 'nan's
 
+print('antes de carregar\n',allRules,'\n',afnd,'\n')
 
 # função para carregar os tokens na afd
 afnd = carregaTokens(afnd, tokens)          
 
 
 
-print('antes da determinização\n', allRules, afnd)
+print('antes da determinização\n',allRules,'\n',afnd,'\n')
 
 
 # DETERMINIZAÇÃO --------------------------------------------------------------
@@ -535,7 +575,7 @@ print('antes da determinização\n', allRules, afnd)
 
 
 # determiniza o afnd + remove os 'nan' + ordena a tabela e normaliza
-afd = determiniza(afnd, allTokens)           
+afd = determiniza(afnd, allTokens)      
 afd = removeNan(afd)                        
 afd = ordenaTable(afd)                      
 
