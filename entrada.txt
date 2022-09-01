@@ -1,6 +1,6 @@
 se
-entao
-senao
+ex
+si
 
 <S> ::= e<A> | i<A> 
 <A> ::= e<A> | i<A> |  ε
